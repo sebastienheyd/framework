@@ -114,6 +114,12 @@ class MassMailer
 					}
 				}
 				@unlink($mailMessagePath);
+				$dir = dirname($mailMessagePath);
+				$outboxPath = realpath($this->getOutboxPath());
+				while (realpath($dir) != $outboxPath && @rmdir($dir))
+				{
+					$dir = dirname($dir);
+				}
 			}
 			catch (Exception $e)
 			{
