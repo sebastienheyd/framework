@@ -648,6 +648,32 @@ abstract class f_persistentdocument_PersistentProvider
 		}
 		return $this->find($this->createQuery($union->getDocumentModel()->getName())->add(Restrictions::in("id", $ids)));
 	}
+	
+	/**
+	 * @param f_persistentdocument_criteria_Criterion $criterion
+	 * @return boolean
+	 */
+	protected function isJoinCriterion($criterion)
+	{
+		return isset($criterion->joinCriterion) && $criterion->joinCriterion;
+	}
+	
+	/**
+	 * @param f_persistentdocument_criteria_Criterion $criterion
+	 * @param f_persistentdocument_DocumentQueryBuilder $qBuilder
+	 * @param string $condition
+	 */
+	protected function addWhere($criterion, $qBuilder, $condition)
+	{
+		if ($this->isJoinCriterion($criterion))
+		{
+			$qBuilder->addFrom("and ".$condition);
+		}
+		else
+		{
+			$qBuilder->addWhere($condition);
+		}
+	}
 
 	/**
 	 * @param f_persistentdocument_criteria_ExecutableQuery $query

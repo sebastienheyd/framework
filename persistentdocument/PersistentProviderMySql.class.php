@@ -1622,7 +1622,7 @@ class f_persistentdocument_PersistentProviderMySql extends f_persistentdocument_
 
 			if ($criterion instanceof f_persistentdocument_criteria_Junction)
 			{
-				$qBuilder->beginJunction($criterion);
+				$qBuilder->beginJunction($criterion, $this->isJoinCriterion($criterion));
 				$subCriterions = $criterion->getCriterions();
 				foreach ($subCriterions as $subcriterion)
 				{
@@ -1661,7 +1661,7 @@ class f_persistentdocument_PersistentProviderMySql extends f_persistentdocument_
 			{
 				$minKey = $qBuilder->addParam($propertyName, $criterion->getMin());
 				$maxKey = $qBuilder->addParam($propertyName, $criterion->getMax());
-				$qBuilder->addWhere('('.$columnName.' between '.$minKey.' and '.$maxKey.')');
+				$this->addWhere($criterion, $qBuilder, '('.$columnName.' between '.$minKey.' and '.$maxKey.')');
 			}
 			elseif ($criterion instanceof f_persistentdocument_criteria_EmptyExpression)
 			{
@@ -1669,17 +1669,16 @@ class f_persistentdocument_PersistentProviderMySql extends f_persistentdocument_
 				{
 					if ($qBuilder->getModel()->isUniqueProperty($propertyName))
 					{
-						// intsimoa : I prefer NULL values for this case, but ...
-						$qBuilder->addWhere('('.$columnName. ' IS NULL)');
+						$this->addWhere($criterion, $qBuilder, '('.$columnName. ' IS NULL)');
 					}
 					else
 					{
-						$qBuilder->addWhere('('.$columnName. ' = 0)');
+						$this->addWhere($criterion, $qBuilder, '('.$columnName. ' = 0)');
 					}
 				}
 				else
 				{
-					$qBuilder->addWhere('('.$columnName. ' IS NULL OR '.$columnName.' = \'\')');
+					$this->addWhere($criterion, $qBuilder, '('.$columnName. ' IS NULL OR '.$columnName.' = \'\')');
 				}
 			}
 			elseif ($criterion instanceof f_persistentdocument_criteria_InExpression)
@@ -1702,7 +1701,7 @@ class f_persistentdocument_PersistentProviderMySql extends f_persistentdocument_
 					}
 					$sql .= join(',', $keys);
 					$sql .= '))';
-					$qBuilder->addWhere($sql);
+					$this->addWhere($criterion, $qBuilder, $sql);
 				}
 				else if ($criterion->getNot())
 				{
@@ -1711,7 +1710,7 @@ class f_persistentdocument_PersistentProviderMySql extends f_persistentdocument_
 				else
 				{
 					// Nothing is included, so nothing should be returned...
-					$qBuilder->addWhere('(0)');
+					$this->addWhere($criterion, $qBuilder, '(0)');
 				}
 			}
 			elseif ($criterion instanceof f_persistentdocument_criteria_LikeExpression)
@@ -1725,7 +1724,7 @@ class f_persistentdocument_PersistentProviderMySql extends f_persistentdocument_
 				$op = $criterion->getNot() ? 'NOT LIKE' : 'LIKE';
 					
 				$key = $qBuilder->addParam($propertyName, $criterion->getMatchMode()->toMatchString($value));
-				$qBuilder->addWhere('('.$columnName.' '.$op.' '.$key.')');
+				$this->addWhere($criterion, $qBuilder, '('.$columnName.' '.$op.' '.$key.')');
 			}
 			elseif ($criterion instanceof f_persistentdocument_criteria_NotEmptyExpression)
 			{
@@ -1734,25 +1733,25 @@ class f_persistentdocument_PersistentProviderMySql extends f_persistentdocument_
 					if ($qBuilder->getModel()->isUniqueProperty($propertyName))
 					{
 						// intsimoa : I prefer NULL values for this case, but ...
-						$qBuilder->addWhere('('.$columnName. ' IS NOT NULL)');
+						$this->addWhere($criterion, $qBuilder, '('.$columnName. ' IS NOT NULL)');
 					}
 					else
 					{
-						$qBuilder->addWhere('('.$columnName. ' > 0)');
+						$this->addWhere($criterion, $qBuilder, '('.$columnName. ' > 0)');
 					}
 				}
 				else
 				{
-					$qBuilder->addWhere('('.$columnName. ' IS NOT NULL and '.$columnName.' != \'\')');
+					$this->addWhere($criterion, $qBuilder, '('.$columnName. ' IS NOT NULL and '.$columnName.' != \'\')');
 				}
 			}
 			elseif ($criterion instanceof f_persistentdocument_criteria_NotNullExpression)
 			{
-				$qBuilder->addWhere('('.$columnName. ' IS NOT NULL)');
+				$this->addWhere($criterion, $qBuilder, '('.$columnName. ' IS NOT NULL)');
 			}
 			elseif ($criterion instanceof f_persistentdocument_criteria_NullExpression)
 			{
-				$qBuilder->addWhere('('.$columnName. ' IS NULL)');
+				$this->addWhere($criterion, $qBuilder, '('.$columnName. ' IS NULL)');
 			}
 			elseif ($criterion instanceof f_persistentdocument_criteria_PropertyExpression)
 			{
@@ -1767,7 +1766,7 @@ class f_persistentdocument_PersistentProviderMySql extends f_persistentdocument_
 					case '>=':
 					case '<':
 					case '>':
-						$qBuilder->addWhere('('.$columnName.' '.$criterion->getOp().' '.$otherColumnName.')');
+						$this->addWhere($criterion, $qBuilder, '('.$columnName.' '.$criterion->getOp().' '.$otherColumnName.')');
 						break;
 					default:
 						throw new Exception('Unknown operator '.$criterion->getOp());
@@ -1791,7 +1790,7 @@ class f_persistentdocument_PersistentProviderMySql extends f_persistentdocument_
 							$columnName = 'lower('.$columnName.')';
 						}
 						$key = $qBuilder->addParam($propertyName, $value);
-						$qBuilder->addWhere('('.$columnName.' '.$criterion->getOp().' '.$key.')');
+						$this->addWhere($criterion, $qBuilder, '('.$columnName.' '.$criterion->getOp().' '.$key.')');
 						break;
 					default:
 						throw new Exception('Unknown operator '.$criterion->getOp());
@@ -2149,9 +2148,9 @@ class f_persistentdocument_DocumentQueryBuilder
 		return array_pop($this->models);
 	}
 
-	public function beginJunction($junction)
+	public function beginJunction($junction, $isJoinCriterion = false)
 	{
-		$this->currentSqlJunction = (object)array('op' => $junction->getOp(), 'where' => array());
+		$this->currentSqlJunction = (object)array('op' => $junction->getOp(), 'where' => array(), "isJoinCriterion" => $isJoinCriterion);
 		$this->junctions[] = $this->currentSqlJunction;
 	}
 
@@ -2167,7 +2166,15 @@ class f_persistentdocument_DocumentQueryBuilder
 			$this->currentSqlJunction = null;
 		}
 
-		$this->addWhere('(' . join(' '.$sqlJunction->op.' ', $sqlJunction->where) . ')');
+		$condition = '(' . join(' '.$sqlJunction->op.' ', $sqlJunction->where) . ')';
+		if ($sqlJunction->isJoinCriterion)
+		{
+			$this->addFrom("and ".$condition);
+		}
+		else
+		{
+			$this->addWhere($condition);
+		}
 	}
 
 	/**

@@ -276,6 +276,11 @@ class f_persistentdocument_criteria_QueryImpl implements f_persistentdocument_cr
 	 * @var array
 	 */
 	private $criterions = array();
+	
+	/**
+	 * @var f_persistentdocument_criteria_Criterion[]
+	 */
+	private $joinCriterions = array();
 	/**
 	 * @var array
 	 */
@@ -688,9 +693,10 @@ class f_persistentdocument_criteria_QueryImpl implements f_persistentdocument_cr
 	/**
 	 * @param string $propertyName
 	 * @param string $documentModelName
+	 * @param f_persistentdocument_criteria_Criterion[] joinCriterions
 	 * @return f_persistentdocument_criteria_Criteria
 	 */
-	function createLeftCriteria($propertyName, $documentModelName = null)
+	function createLeftCriteria($propertyName, $documentModelName = null, $joinCriterions = null)
 	{
 		if ($this->model === null)
 		{
@@ -759,8 +765,12 @@ class f_persistentdocument_criteria_QueryImpl implements f_persistentdocument_cr
 		$c->setDocumentModel($subModel, true);
 		$c->setParentQuery($this);
 		$c->setProvider($this->getProvider());
+		if (is_array($joinCriterions))
+		{
+			$c->joinCriterions = $joinCriterions;
+		}
 		$this->addCriteria($propertyName, $c);
-		return $c;		
+		return $c;
 	}
 
 	public function createSubCriteria($relationName)
@@ -785,12 +795,20 @@ class f_persistentdocument_criteria_QueryImpl implements f_persistentdocument_cr
 		$c->setProvider($this->getProvider());
 		return array($relationName, $c);
 	}
-
+	
 	/**
 	 * @return array
 	 */
 	public function getCriterions()
 	{
+		if ($this->joinCriterions !== null)
+		{
+			foreach ($this->joinCriterions as $criterion)
+			{
+				$criterion->joinCriterion = true;
+			}
+			return array_merge($this->joinCriterions, $this->criterions);
+		}
 		return $this->criterions;
 	}
 
