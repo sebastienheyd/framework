@@ -3733,7 +3733,9 @@ abstract class f_persistentdocument_PersistentProvider
 		$stmt = $this->prepareStatement($this->getHasPermissionACLQuery());
 		$stmt->bindValue(':nodeId', $nodeId);
 		$this->executeStatement($stmt);
-		return $stmt->fetchColumn()>0;
+		$res = $stmt->fetchColumn()>0;
+		$stmt->closeCursor();
+		return $res;
 	}
 
 
@@ -3750,7 +3752,9 @@ abstract class f_persistentdocument_PersistentProvider
 		$stmt->bindValue(':nodeId', $nodeId);
 		$stmt->bindValue(':permission', $packageName .'%');
 		$this->executeStatement($stmt);
-		return $stmt->fetchColumn()>0;
+		$res = $stmt->fetchColumn()>0;
+		$stmt->closeCursor();
+		return $res;
 	}
 
 	/**
@@ -3767,7 +3771,9 @@ abstract class f_persistentdocument_PersistentProvider
 		$stmt->bindValue(':permission', $perm);
 		$stmt->bindValue(':nodeId', $node);
 		$this->executeStatement($stmt);
-		return $stmt->fetchColumn()>0;
+		$res = $stmt->fetchColumn()>0;
+		$stmt->closeCursor();
+		return $res;
 	}
 
 	/**
