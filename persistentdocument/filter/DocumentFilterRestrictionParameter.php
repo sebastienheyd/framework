@@ -233,7 +233,7 @@ class f_persistentdocument_DocumentFilterRestrictionParameter extends f_persiste
 				
 				case 'XHTMLFragment' : 
 				case 'LongString' :
-					return array('like', 'ilike', 'notLike');
+					return array('like', 'ilike', 'notLike', 'isNull', 'isNotNull');
 					break;
 					
 				case 'Boolean' :
@@ -288,22 +288,39 @@ class f_persistentdocument_DocumentFilterRestrictionParameter extends f_persiste
 	public function getValueForQuery()
 	{
 		$this->validate(true);
-		$value = $this->parameter->getValueForQuery();
-		
-		//TODO For compatibility
-		if (is_array($value))
+		if ($this->needsParameter())
 		{
-			switch ($this->restriction) {
-				case 'eq':
-					$this->restriction = 'in';
-					break;
-				case 'ne':
-					$this->restriction = 'notin';
-					break;
+			$value = $this->parameter->getValueForQuery();
+			
+			//TODO For compatibility
+			if (is_array($value))
+			{
+				switch ($this->restriction)
+				{
+					case 'eq':
+						$this->restriction = 'in';
+						break;
+					case 'ne':
+						$this->restriction = 'notin';
+						break;
+				}
 			}
+			$arguments = array($this->propertyInfo->getName(), $value);
 		}
-		$arguments = array($this->propertyInfo->getName(), $value);
+		else
+		{
+			$arguments = array($this->propertyInfo->getName()); 
+		}
+		
 		return f_util_ClassUtils::callMethodArgs($this->restrictionType, $this->restriction, $arguments);
+	}
+	
+	/**
+	 * @return boolean
+	 */
+	protected function needsParameter()
+	{
+		return $this->restriction != "isNull" && $this->restriction != "isNotNull";
 	}
 	
 	/**
@@ -413,17 +430,24 @@ class f_persistentdocument_DocumentFilterRestrictionParameter extends f_persiste
 			}
 			return false;
 		}
-		else if ($this->parameter === null)
+		else
 		{
-			if ($throwException)
+			if (!$this->needsParameter())
 			{
-				throw new ValidationException('Invalid parameter: no parameter');
+				return true;
 			}
-			return false;
-		}
-		else if (!$this->parameter->validate($throwException))
-		{
-			return false;
+			else if ($this->parameter === null)
+			{	
+				if ($throwException)
+				{
+					throw new ValidationException('Invalid parameter: no parameter');
+				}
+				return false;
+			}
+			else if (!$this->parameter->validate($throwException))
+			{
+				return false;
+			}
 		}
 		return true;
 	}
