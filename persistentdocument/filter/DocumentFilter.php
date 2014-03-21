@@ -256,6 +256,10 @@ abstract class f_persistentdocument_DocumentFilterImpl implements f_persistentdo
 					}
 				}
 				return true;
+			case 'isNull':
+				return $testVal === null;
+			case 'isNotNull':
+				return $testVal !== null;
 		}
 		return false;
 	}
