@@ -114,6 +114,15 @@ class f_mvc_DynBean implements f_mvc_Bean
 	{
 		return call_user_func_array(array($this->wrappedObject, $name), $arguments);
 	}
+	
+	function __get($name)
+	{
+		if (isset($this->wrappedObject->{$name}))
+		{
+			return $this->wrappedObject->{$name};
+		}
+		return null;
+	}
 }
 
 class f_mvc_DynBeanModel implements f_mvc_BeanModel
