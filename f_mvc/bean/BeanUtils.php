@@ -470,6 +470,7 @@ class BeanUtils
 			}
 			else
 			{
+				$target = $bean;
 				$class = new ReflectionClass($bean);
 			}
 		}
