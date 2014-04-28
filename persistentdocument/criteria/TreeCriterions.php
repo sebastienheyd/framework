@@ -128,16 +128,22 @@ class f_persistentdocument_criteria_DescendentOfExpression implements f_persiste
      * @var Integer
      */
     private $level;
+    /**
+     * @var boolean
+     */
+    private $includeParent;
 
     /**
      * Default constructor
-     * @param Integer $Integer
-     * @param Integer $Integer
+     * @param Integer $documentId
+     * @param Integer $level
+     * @param boolean $includeParent
      */
-    public function __construct($documentId, $level)
+    public function __construct($documentId, $level, $includeParent = false)
     {
         $this->documentId = $documentId;
         $this->level = $level;
+        $this->includeParent = $includeParent;
     }
 
     /**
@@ -154,5 +160,13 @@ class f_persistentdocument_criteria_DescendentOfExpression implements f_persiste
     public function getLevel()
     {
         return $this->level;
+    }
+    
+    /**
+    * @return boolean
+    */
+    public function includeParent()
+    {
+    	return $this->includeParent;
     }
 }

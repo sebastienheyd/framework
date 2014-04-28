@@ -2117,7 +2117,12 @@ class f_persistentdocument_PersistentProviderMySql extends f_persistentdocument_
 				$treeAlias = $qBuilder->newTableAlias();
 				$subquery = 'SELECT '.$treeAlias.'.document_id FROM f_tree_'.$treeId.' '.$treeAlias
 					. ' WHERE '.$treeAlias.'.parent_id = '.$docId;
-				$qBuilder->addWhere($modelAlias.'.document_id IN (' .$subquery. ')');
+				$where = $modelAlias.'.document_id IN (' .$subquery. ')';
+				if ($criterion->includeParent())
+				{
+					$where = "($where or $modelAlias.document_id = $docId)";
+				}
+				$qBuilder->addWhere($where);
 			}
 			else
 			{
@@ -2133,7 +2138,12 @@ class f_persistentdocument_PersistentProviderMySql extends f_persistentdocument_
 				{
 					$subquery .= ' AND '.$treeAlias.'.node_level <= '.$parenTreeAlias.'.node_level + '.$level;
 				}
-				$qBuilder->addWhere($modelAlias.'.document_id IN (' .$subquery. '))');
+				$where = $modelAlias.'.document_id IN (' .$subquery. '))';
+				if ($criterion->includeParent())
+				{
+					$where = "($where or $modelAlias.document_id = $docId)";
+				}
+				$qBuilder->addWhere($where);
 			}
 		}
 		elseif ($criterion instanceof f_persistentdocument_criteria_NextSiblingOfExpression)
