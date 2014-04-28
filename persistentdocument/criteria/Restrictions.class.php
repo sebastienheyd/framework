@@ -409,10 +409,11 @@ class Restrictions
 	 * Apply a "descendentOf" constraint (in a tree).
 	 * @param String $documentId
 	 * @param Integer $level
+	 * @param boolean $includeParent
 	 */
-	static function descendentOf($documentId, $level = -1)
+	static function descendentOf($documentId, $level = -1, $includeParent = false)
 	{
-		return new f_persistentdocument_criteria_DescendentOfExpression($documentId, $level);
+		return new f_persistentdocument_criteria_DescendentOfExpression($documentId, $level, $includeParent);
 	}
 
 	/**
