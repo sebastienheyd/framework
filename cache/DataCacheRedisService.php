@@ -234,6 +234,11 @@ class f_DataCacheRedisService extends f_DataCacheService
 class f_FakeRedis
 {
 	private $multiMode = false;
+
+	function connect()
+	{
+		return true;
+	}
 	
 	function auth()
 	{
@@ -278,6 +283,11 @@ class f_FakeRedis
 	function get($key)
 	{
 		 
+		return ($this->multiMode) ? $this : false;
+	}
+
+	function set($key, $value)
+	{
 		return ($this->multiMode) ? $this : false;
 	}
 	
