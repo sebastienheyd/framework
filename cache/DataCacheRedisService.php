@@ -56,7 +56,7 @@ class f_DataCacheRedisService extends f_DataCacheService
 					}
 					$conf["port"] = self::$defaultRedisPort;
 				}
-				if (!$redis->connect($conf["host"], $conf["port"]))
+				if (!$redis->connect($conf["host"], $conf["port"], isset($conf["timeout"]) ? $conf["timeout"] : 0.1))
 				{
 					Framework::warn(__METHOD__." could not connect to ".$conf["host"].":".$conf["port"]);
 					$redis = new f_FakeRedis();
