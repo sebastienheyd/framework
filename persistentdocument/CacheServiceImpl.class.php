@@ -610,7 +610,7 @@ class f_persistentdocument_RedisCacheService extends f_persistentdocument_CacheS
 	{
 		$redis = new Redis();	
 		$config = Framework::getConfiguration("redis");
-		$con = $redis->connect($config["server"]["host"], $config["server"]["port"]);
+		$con = $redis->connect($config["server"]["host"], $config["server"]["port"], isset($config["server"]["timeout"]) ? $config["server"]["timeout"] : 0.1);
 		if ($con)
 		{
 			if (isset($config["authentication"]))
