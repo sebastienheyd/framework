@@ -178,9 +178,9 @@ class HTTPClient
 	 */
 	public function post($url, $params)
 	{
-		$query = http_build_query($params, null , '&');		
-		$this->setOption(CURLOPT_POSTFIELDS, $query);
+		$query = http_build_query($params, null , '&');
 		$this->setOption(CURLOPT_POST, true);
+		$this->setOption(CURLOPT_POSTFIELDS, $query);		
 		return $this->execute($url);
 	}
 
