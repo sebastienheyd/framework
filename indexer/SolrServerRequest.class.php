@@ -77,6 +77,7 @@ class indexer_SolrServerRequest
 		if ($this->getMethod() == self::METHOD_POST)
 		{
 			curl_setopt($this->curlHandle, CURLOPT_POSTFIELDS, $this->data);
+			$this->headers[] = "Content-Type: application/x-www-form-urlencoded; charset=UTF-8";
 		}
 			
 		if (Framework::isDebugEnabled())
@@ -140,7 +141,6 @@ class indexer_SolrServerRequest
 		}
 		else
 		{
-			$this->headers[] = "Content-Type: application/x-www-form-urlencoded; charset=UTF-8";
 			curl_setopt($this->curlHandle, CURLOPT_POST, 1);
 		}
 		curl_setopt($this->curlHandle, CURLOPT_URL, $this->url);
