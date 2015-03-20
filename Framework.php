@@ -565,7 +565,7 @@ ini_set('arg_separator.output',      '&amp;');
 ini_set('display_errors',            1);
 ini_set('magic_quotes_runtime',      0);
 
-error_reporting(E_ALL);
+error_reporting(E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
 require_once(FRAMEWORK_HOME.'/libs/mvc/Context.class.php');
 require_once(FRAMEWORK_HOME.'/libs/mvc/Controller.class.php');
 require_once(FRAMEWORK_HOME.'/libs/mvc/Request.class.php');
