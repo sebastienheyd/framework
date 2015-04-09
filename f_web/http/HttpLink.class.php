@@ -46,17 +46,11 @@ abstract class f_web_HttpLink implements f_web_Link
 
 	public static function http_build_url($parts)
 	{
-		if (extension_loaded('http'))
-		{
-			return http_build_url($parts);
-		}
-		else
-		{
-			if (!isset($parts['host']))
-			{
-				$parts['host'] = $_SERVER['HTTP_HOST'];
-			}
-		}
+
+        if (!isset($parts['host']))
+        {
+            $parts['host'] = $_SERVER['HTTP_HOST'];
+        }
 		
 		//'scheme' :// 'user' : 'pass' @ 'host' 'path' ? 'query' # 'fragment';
 		$url = array($parts['scheme'], '://');
