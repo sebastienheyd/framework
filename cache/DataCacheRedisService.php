@@ -19,6 +19,7 @@ class f_DataCacheRedisService extends f_DataCacheService
 {
 	private static $instance;
 	private static $defaultRedisPort = 6379;
+	private $useCompression = false;
 	
 	/**
 	 * @var Redis
@@ -56,9 +57,20 @@ class f_DataCacheRedisService extends f_DataCacheService
 					}
 					$conf["port"] = self::$defaultRedisPort;
 				}
-				if (!$redis->connect($conf["host"], $conf["port"], isset($conf["timeout"]) ? $conf["timeout"] : 0.1))
+				$con = false;
+				$timeout = isset($conf["timeout"]) ? $conf["timeout"] : 0.1;
+				$persistent = isset($conf["persistent"]) && f_util_Convert::toBoolean($conf["persistent"]); 
+				if ($persistent)
 				{
-					Framework::warn(__METHOD__." could not connect to ".$conf["host"].":".$conf["port"]);
+				    $con = $redis->pconnect($conf["host"], $conf["port"], $timeout);
+				}
+				else
+				{
+				    $con = $redis->connect($conf["host"], $conf["port"], $timeout);
+				}
+				if (!$con)
+				{
+					Framework::warn(__METHOD__." could not connect to ".$conf["host"].":".$conf["port"]." persistent = ".var_export($persistent, true));
 					$redis = new f_FakeRedis();
 				}
 				
@@ -79,6 +91,8 @@ class f_DataCacheRedisService extends f_DataCacheService
 					Framework::warn(__METHOD__." could not select database ".$conf["database"]);
 					$redis = new f_FakeRedis();
 				}
+				
+				$this->useCompression = isset($conf["compression"]) && f_util_Convert::toBoolean($conf["compression"]);
 			}
 			catch (RedisException $e)
 			{
@@ -203,10 +217,13 @@ class f_DataCacheRedisService extends f_DataCacheService
 		$keyParams = $item->getKeyParameters();
 		$itemNameSpace = $item->getNamespace();
 		
-		$this->redis->multi(Redis::PIPELINE)
-			->sAdd("items-$itemNameSpace", $keyParams)
-			->setex("item-".$itemNameSpace."-".$keyParams, $item->getTTL(), serialize($data))
-			->exec();
+		$serialized = $this->serialize($data);
+		if ($serialized !== false) {
+		    $this->redis->multi(Redis::PIPELINE)
+		    ->sAdd("items-$itemNameSpace", $keyParams)
+		    ->setex("item-".$itemNameSpace."-".$keyParams, $item->getTTL(), $serialized)
+		    ->exec();
+		}
 	}
 
 	/**
@@ -218,7 +235,7 @@ class f_DataCacheRedisService extends f_DataCacheService
 		$dataSer = $this->redis->get("item-".$item->getNamespace()."-".$item->getKeyParameters());
 		if ($dataSer !== false)
 		{
-			$data = unserialize($dataSer);
+			$data = $this->unserialize($dataSer);
 			if ($data !== false)
 			{
 				$item->setCreationTime($data["c"]);
@@ -228,6 +245,37 @@ class f_DataCacheRedisService extends f_DataCacheService
 			}
 		}
 		return $item;
+	}
+	
+	/**
+	 * @param unknown $data
+	 * @return boolean|string false on error
+	 */
+	protected function serialize($data)
+	{
+	    $serialized = serialize($data);
+	    if ($serialized === false) {
+	        return false;
+	    }
+	    if ($this->useCompression) {
+	        $serialized = gzcompress($serialized);
+	    }
+	    return $serialized;
+	}
+	
+	/**
+	 * @param unknown $data
+	 * @return boolean|mixed false on error
+	 */
+	protected function unserialize($data)
+	{
+	    if ($this->useCompression) {
+	        $data = gzuncompress($data);
+	    }
+	    if ($data === false) {
+	        return false;
+	    }
+	    return unserialize($data);
 	}
 }
 
