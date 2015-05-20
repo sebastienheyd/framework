@@ -605,12 +605,20 @@ class f_persistentdocument_RedisCacheService extends f_persistentdocument_CacheS
 	private $inTransaction = false;
 	private $deleteTransactionKeys = array();
 	private $updateTransactionKeys = array();
+	private $useCompression = false;
 
 	protected function __construct()
 	{
 		$redis = new Redis();	
 		$config = Framework::getConfiguration("redis");
-		$con = $redis->connect($config["server"]["host"], $config["server"]["port"], isset($config["server"]["timeout"]) ? $config["server"]["timeout"] : 0.1);
+		$timeout = isset($config["server"]["timeout"]) ? $config["server"]["timeout"] : 0.1;
+		$persistent = isset($config["server"]["persistent"]) && f_util_Convert::toBoolean($config["server"]["persistent"]);
+		if ($persistent) {
+		    $con = $redis->pconnect($config["server"]["host"], $config["server"]["port"], $timeout);
+		} else {
+		    $con = $redis->connect($config["server"]["host"], $config["server"]["port"], $timeout);
+		}
+		
 		if ($con)
 		{
 			if (isset($config["authentication"]))
@@ -623,6 +631,7 @@ class f_persistentdocument_RedisCacheService extends f_persistentdocument_CacheS
 			{
 				$this->redis = $redis;
 			}
+			$this->useCompression = isset($config["server"]["compression"]) && f_util_Convert::toBoolean($config["server"]["compression"]);
 		}
 	}
 
@@ -663,7 +672,42 @@ class f_persistentdocument_RedisCacheService extends f_persistentdocument_CacheS
 			$end = microtime(true);
 			Framework::debug("CacheService : time to get $key : ".($end-$begin)." ms");
 		}
-		return ($object === false) ? null : unserialize($object);
+		return ($object === false) ? null : $this->unserialize($object);
+	}
+	
+	/**
+	 * @param unknown $object
+	 * @return boolean|string false on error
+	 */
+	protected function serialize($object)
+	{
+	    $serialized = serialize($object);
+	    if ($serialized === false) {
+	        return false;
+	    }
+	    return $this->useCompression ? gzcompress($serialized) : $serialized;
+	}
+	
+	/**
+	 * @param unknown $data
+	 * @return NULL|mixed null on error
+	 */
+	protected function unserialize($data)
+	{
+	    if ($data === false) {
+	        return null;
+	    }
+	    if ($this->useCompression) {
+	        $data = gzuncompress($data);
+	    }
+	    if ($data === false) {
+	        return null;
+	    }
+	    $unserialized = unserialize($data);
+	    if ($unserialized === false) {
+	        return null;
+	    }
+	    return $unserialized;
 	}
 
 	/**
@@ -683,7 +727,7 @@ class f_persistentdocument_RedisCacheService extends f_persistentdocument_CacheS
 		
 		foreach ($cursor as $doc)
 		{
-			$returnArray[] = ($doc === false) ? null : unserialize($doc);
+			$returnArray[] = ($doc === false) ? null : $this->unserialize($doc);
 		}
 		return $returnArray;
 	}
@@ -703,10 +747,12 @@ class f_persistentdocument_RedisCacheService extends f_persistentdocument_CacheS
 			}
 			else 
 			{
-				$serialized = serialize($object);
-				$result = $this->redis->set(self::REDIS_KEY_PREFIX.$key, $serialized);
+				$serialized = $this->serialize($object);
+				if ($serialized !== false) {
+				    $result = $this->redis->set(self::REDIS_KEY_PREFIX.$key, $serialized);
+				}
 			}
-			return ($result == true) ? true : false;
+			return $result == true;
 		}
 		else if ($object === null)
 		{
@@ -728,7 +774,10 @@ class f_persistentdocument_RedisCacheService extends f_persistentdocument_CacheS
 	{
 		if (!$this->inTransaction)
 		{
-			$serialized = serialize($object);
+			$serialized = $this->serialize($object);
+			if ($serialized === false) {
+			    return false;
+			}
 			$result = $this->redis->set(self::REDIS_KEY_PREFIX.$key, $serialized);
 			return $result;
 		}
@@ -781,8 +830,10 @@ class f_persistentdocument_RedisCacheService extends f_persistentdocument_CacheS
 			
 			foreach ($this->updateTransactionKeys as $key => $object)
 			{
-				$serialized = serialize($object);
-				$result = $this->redis->set($key, $serialized);
+				$serialized = $this->serialize($object);
+				if ($serialized !== false) {
+				    $result = $this->redis->set($key, $serialized);
+				}
 			}
 			
 			$this->rollBack();
