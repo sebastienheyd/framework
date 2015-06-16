@@ -28,7 +28,8 @@ class f_DataCacheRedisService extends f_DataCacheService
 	
 	protected function __construct()
 	{
-		$this->redis = $this->getRedis();
+		$conf = Framework::getConfigurationValue("datacache-redis/server");
+		$this->useCompression = isset($conf["compression"]) && f_util_Convert::toBoolean($conf["compression"]);
 	}
 	
 	/**
@@ -118,7 +119,7 @@ class f_DataCacheRedisService extends f_DataCacheService
 	
 	public function clearCommand()
 	{
-		$this->redis->flushDB();
+		$this->getRedis()->flushDB();
 	}
 	
 	/**
@@ -126,16 +127,17 @@ class f_DataCacheRedisService extends f_DataCacheService
 	 */
 	public function getCacheIdsForPattern($pattern)
 	{
-		return $this->redis->sMembers("pattern-".$pattern);
+		return $this->getRedis()->sMembers("pattern-".$pattern);
 	}
 	
 	protected function commitClear()
 	{
 		Framework::debug(__METHOD__);
+		$redis = $this->getRedis();
 		if ($this->clearAll)
 		{
 			Framework::debug(__METHOD__." : clear all");
-			$this->redis->flushDB();
+			$redis->flushDB();
 		}
 		else
 		{
@@ -149,7 +151,7 @@ class f_DataCacheRedisService extends f_DataCacheService
 				foreach (array_keys($this->idToClear) as $itemNameSpace)
 				{
 					$itemsKey = "items-$itemNameSpace";
-					foreach ($this->redis->sMembers($itemsKey) as $keyParams)
+					foreach ($redis->sMembers($itemsKey) as $keyParams)
 					{
 						$keysToDelete[] = "item-$itemNameSpace-$keyParams";
 					}
@@ -163,13 +165,13 @@ class f_DataCacheRedisService extends f_DataCacheService
 				}
 				foreach (array_keys($this->docIdToClear) as $docId)
 				{
-					foreach ($this->redis->sMembers("pattern-".$docId) as $cacheKey)
+					foreach ($redis->sMembers("pattern-".$docId) as $cacheKey)
 					{
 						$keysToDelete[] = "item-$cacheKey";
 					}
 				}
 			}
-			$this->redis->delete($keysToDelete);
+			$redis->delete($keysToDelete);
 		}
 		
 		$this->clearAll = false;
@@ -182,10 +184,11 @@ class f_DataCacheRedisService extends f_DataCacheService
 	 */
 	protected function register($item)
 	{
+		$redis = $this->getRedis();
 		$itemNamespace = $item->getNamespace();
-		if (!$this->redis->sIsMember("registration", $itemNamespace))
+		if (!$redis->sIsMember("registration", $itemNamespace))
 		{
-			$multiRedis = $this->redis->multi(Redis::PIPELINE);
+			$multiRedis = $redis->multi(Redis::PIPELINE);
 			foreach ($this->optimizeCacheSpecs($item->getPatterns()) as $pattern)
 			{
 				$multiRedis->sAdd("pattern-".$pattern, $itemNamespace);
@@ -197,7 +200,7 @@ class f_DataCacheRedisService extends f_DataCacheService
 		$itemKey = $item->getNamespace()."-".$item->getKeyParameters();
 		foreach ($item->getPatterns() as $pattern)
 		{
-			$multiRedis = $this->redis->multi(Redis::PIPELINE);
+			$multiRedis = $redis->multi(Redis::PIPELINE);
 			if (is_numeric($pattern))
 			{
 				$multiRedis->sAdd("pattern-".$pattern, $itemKey);
@@ -219,7 +222,7 @@ class f_DataCacheRedisService extends f_DataCacheService
 		
 		$serialized = $this->serialize($data);
 		if ($serialized !== false) {
-		    $this->redis->multi(Redis::PIPELINE)
+		    $this->getRedis()->multi(Redis::PIPELINE)
 		    ->sAdd("items-$itemNameSpace", $keyParams)
 		    ->setex("item-".$itemNameSpace."-".$keyParams, $item->getTTL(), $serialized)
 		    ->exec();
@@ -232,7 +235,7 @@ class f_DataCacheRedisService extends f_DataCacheService
 	 */
 	protected function getData($item)
 	{
-		$dataSer = $this->redis->get("item-".$item->getNamespace()."-".$item->getKeyParameters());
+		$dataSer = $this->getRedis()->get("item-".$item->getNamespace()."-".$item->getKeyParameters());
 		if ($dataSer !== false)
 		{
 			$data = $this->unserialize($dataSer);
@@ -288,6 +291,11 @@ class f_FakeRedis
 		return true;
 	}
 	
+	function pconnect()
+	{
+		return true;
+	}
+	
 	function auth()
 	{
 		return true;
@@ -322,6 +330,11 @@ class f_FakeRedis
 	{
 		return ($this->multiMode) ? $this : true;
 	}
+	
+	function sscan($key, &$ite, $pattern = null)
+	{
+		return ($this->multiMode) ? $this : false;
+	}
 		
 	function setex($key, $ttl, $value)
 	{
@@ -349,5 +362,12 @@ class f_FakeRedis
 	{
 		$this->multiMode = false;
 		return array();
+	}
+	
+	function __call($method, $args) {
+		if ($method == "eval") {
+			return 0;
+		}
+		throw new Exception("Unimplemented method $method");
 	}
 }
