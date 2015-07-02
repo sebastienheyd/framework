@@ -792,9 +792,40 @@ class f_persistentdocument_RedisCacheService extends f_persistentdocument_CacheS
 	{
 		if ($pattern === null)
 		{
-			return $this->redis->flushDB();
+			return $this->softFlush($this->redis);
 		}
 		return $this->redis->delete(self::REDIS_KEY_PREFIX.$pattern);
+	}
+	
+	/**
+	 * @param Redis $redis
+	 */
+	protected function softFlush($redis, $usleep = 10000)
+	{
+		$ite = null;
+		$isInCli = $this->isInCli();
+		$deleteCount = $expireCount = 0;
+		while ($keys = $redis->scan($ite)) {
+			foreach ($keys as $key) {
+				if (Framework::isDebugEnabled() && $isInCli) {
+					echo $key, "\n";
+				}
+				$redis->del($key);
+				$deleteCount++;
+				usleep($usleep);
+			}
+		}
+		if ($isInCli) {
+			echo "$deleteCount keys deleted, $expireCount keys marked as expired\n";
+		}
+	}
+	
+	/**
+	 * @return boolean
+	 */
+	protected function isInCli()
+	{
+		return strtolower(php_sapi_name()) == "cli";
 	}
 
 	// private methods
