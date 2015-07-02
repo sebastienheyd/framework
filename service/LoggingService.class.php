@@ -192,7 +192,18 @@ class LoggingService extends BaseService
 		$infos .= "clientip: " . (isset($_SERVER["REMOTE_ADDR"]) ? $_SERVER["REMOTE_ADDR"]: "-").", ";
 		$sessionId = session_id();
 		$infos .= "sessionid: " . ($sessionId ? $sessionId : "-") .", ";
-		$infos .= "request: " . "http". (isset($_SERVER["HTTPS"]) ? "s" : ""). "://". $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"].", ";
+        $request = "http";
+        $request .= (isset($_SERVER["HTTPS"]) ? "s" : "") ."://";
+        if (isset($_SERVER["HTTP_HOST"])) {
+            $request .= $_SERVER["HTTP_HOST"];
+        }
+        if (isset($_SERVER["REQUEST_URI"])) {
+            $request .= $_SERVER["REQUEST_URI"];
+        }
+        if ($request == "http://") {
+            $request = "-";
+        }
+		$infos .= "request: " . $request . ", ";
 		$infos .= "userid: " . (isset($_SESSION["User/attributes"]["frontend"]["userid"]) ? $_SESSION["User/attributes"]["frontend"]["userid"] : "-");
 		
 		return $infos;
