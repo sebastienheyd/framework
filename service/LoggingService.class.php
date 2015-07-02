@@ -152,7 +152,7 @@ class LoggingService extends BaseService
 	 */
 	public function log($stringLine, $loggerGroup)
 	{
-		error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . PHP_EOL, 3, $this->stdLogFilePath);
+		error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . PHP_EOL . $this->getAdditionnalInfos(). PHP_EOL, 3, $this->stdLogFilePath);
 	}
 	
 	/**
@@ -161,7 +161,7 @@ class LoggingService extends BaseService
 	 */
 	public function errorLog($stringLine, $loggerGroup)
 	{
-		error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . PHP_EOL, 3, $this->errLogFilePath);
+		error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . PHP_EOL. $this->getAdditionnalInfos(). PHP_EOL, 3, $this->errLogFilePath);
 	}
 	
 	/**
@@ -174,11 +174,27 @@ class LoggingService extends BaseService
 		try
 		{
 			f_util_FileUtils::mkdir(dirname($logFilePath));
-			error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . PHP_EOL, 3, $logFilePath);
+			error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine .PHP_EOL. $this->getAdditionnalInfos(). PHP_EOL, 3, $logFilePath);
 		} 
 		catch (Exception $e) 
 		{
 			$this->defaultExceptionHandler($e);
 		}
+	}
+	
+	/**
+	 * @return string
+	 */
+	public function getAdditionnalInfos()
+	{
+		$infos = "";
+		$infos .= "referer: " . (isset($_SERVER["HTTP_REFERER"]) ? $_SERVER["HTTP_REFERER"]: "-").", ";
+		$infos .= "clientip: " . (isset($_SERVER["REMOTE_ADDR"]) ? $_SERVER["REMOTE_ADDR"]: "-").", ";
+		$sessionId = session_id();
+		$infos .= "sessionid: " . ($sessionId ? $sessionId : "-") .", ";
+		$infos .= "request: " . "http". (isset($_SERVER["HTTPS"]) ? "s" : ""). "://". $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"].", ";
+		$infos .= "userid: " . (isset($_SESSION["User/attributes"]["frontend"]["userid"]) ? $_SESSION["User/attributes"]["frontend"]["userid"] : "-");
+		
+		return $infos;
 	}
 }
