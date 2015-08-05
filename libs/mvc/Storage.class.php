@@ -108,20 +108,92 @@ abstract class Storage
 	abstract function write ($key, &$data);
 }
 
+interface wf_SessionOpeningStrategy
+{
+	const MODE_RW = "RW";
+	const MODE_RO = "RO";
+	const MODE_NONE = "NONE";
+	
+	/**
+	 * @param string $uri
+	 */
+	function getOpenMode($uri);
+}
+
+class wf_DefaultSessionOpeningStrategy implements wf_SessionOpeningStrategy
+{
+	/**
+	 * @param string $uri
+	 * @return string
+	 */
+	function getOpenMode($uri)
+	{
+		return wf_SessionOpeningStrategy::MODE_RW;
+	}
+}
+
+class wf_URIPatternSessionOpeningStrategy implements wf_SessionOpeningStrategy
+{
+	/**
+	 * @param string $uri
+	 * @return string
+	 */
+	function getOpenMode($uri)
+	{
+		$patterns = Framework::getConfigurationValue("session/url-patterns", array());
+		foreach ($patterns as $pattern => $mode) {
+			if (preg_match("#$pattern#", $uri)) {
+				Framework::debug(__METHOD__." $uri matches $pattern");
+				return $mode;
+			}
+		}
+		Framework::debug(__METHOD__." $uri NO MATCH");
+		return wf_SessionOpeningStrategy::MODE_RW;
+	}
+}
+
 class SessionStorage extends Storage
 {
 	private $started = false;
+	
+	/**
+	 * @return wf_SessionOpeningStrategy
+	 */
+	protected function getSessionOpeningStrategy() {
+		$className = Framework::getConfigurationValue("session/opening-manager", "wf_DefaultSessionOpeningStrategy");
+		Framework::debug(__METHOD__." using $className");
+		return new $className();
+	}
 	
 	public function initialize ($context, $parameters = null)
 	{
 		parent::initialize($context, $parameters);
 		$sessionName = $this->getParameter('session_name', '__CHANGESESSIONID');
 		session_name($sessionName);
+		
 		if ($this->getParameter('auto_start', true))
 		{
 			if (session_id() == "")
 			{
-				session_start();
+				$openingStrategy = $this->getSessionOpeningStrategy();
+				$uri = $_SERVER["REQUEST_URI"];
+				$openMode = $openingStrategy->getOpenMode($uri);
+				Framework::info(__METHOD__." $uri open mode: $openMode");
+				switch ($openMode)
+				{
+					case wf_SessionOpeningStrategy::MODE_RO:
+						session_start();
+						session_write_close();
+						break;
+					case wf_SessionOpeningStrategy::MODE_RW:
+						session_start();
+						break;
+					case wf_SessionOpeningStrategy::MODE_NONE:
+						break;
+					default:
+						Framework::error(__METHOD__." unknown open mode => do RW");
+						session_start();
+				}
 			}
 			$this->started = true;
 		}
