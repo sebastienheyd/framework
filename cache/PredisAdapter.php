@@ -109,7 +109,19 @@ if (!$wfRedisExists || (defined("WF_USE_PREDIS") || WF_USE_PREDIS))
 		 */
 		function delete()
 		{
-			$keys = func_get_args();
+			return $this->_delete(func_get_args()); 
+		}
+		
+		/**
+		 * @return wf_PredisAdapter|number
+		 */
+		function del()
+		{
+			return $this->_delete(func_get_args());
+		}
+		
+		function _delete($keys)
+		{
 			if (isset($keys[0]) && is_array($keys[0])) {
 				$keys = $keys[0];
 			}
@@ -118,7 +130,7 @@ if (!$wfRedisExists || (defined("WF_USE_PREDIS") || WF_USE_PREDIS))
 				return $this;
 			} else {
 				return $this->predis->del($keys);
-			} 
+			}
 		}
 
 		function sIsMember($key, $member)
@@ -155,6 +167,25 @@ if (!$wfRedisExists || (defined("WF_USE_PREDIS") || WF_USE_PREDIS))
 					return false;
 				}
 				$res = $this->predis->sscan($key, $ite, $opts);
+				$ite = $res[0];
+				return $res[1];
+			}
+		}
+		
+		function scan(&$ite, $pattern = null)
+		{
+			$opts = array();
+			if ($pattern !== null) {
+				$opts["match"] = $pattern;
+			}
+			if ($this->multiMode) {
+				$this->transaction->scan($ite, $opts);
+				return $this;
+			} else {
+				if ($ite === "0") {
+					return false;
+				}
+				$res = $this->predis->scan($ite, $opts);
 				$ite = $res[0];
 				return $res[1];
 			}
