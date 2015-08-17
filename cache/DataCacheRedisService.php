@@ -40,8 +40,7 @@ class f_DataCacheRedisService extends f_DataCacheService
 		if ($this->redis === null)
 		{
 			$conf = Framework::getConfigurationValue("datacache-redis/server");
-			$redis = new Redis();
-			
+			$redis = (defined("WF_USE_PREDIS") || WF_USE_PREDIS) ? new wf_PredisAdapter() : new Redis();
 			try
 			{
 				if (!isset($conf["host"]))
@@ -362,6 +361,11 @@ class f_FakeRedis
 	{
 		$this->multiMode = false;
 		return array();
+	}
+	
+	function hGetAll()
+	{
+		return ($this->multiMode) ? $this : false;
 	}
 	
 	function __call($method, $args) {

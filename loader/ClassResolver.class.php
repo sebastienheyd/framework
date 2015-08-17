@@ -173,7 +173,7 @@ class ClassResolver implements ResourceResolver
 	
 	protected function validateClassName($className)
 	{
-		if (! preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $className))
+		if (! preg_match('/^[a-zA-Z_\x7f-\xff][\\a-zA-Z0-9_\x7f-\xff]*$/', $className))
 		{
 			if (Framework::inDevelopmentMode())
 			{
