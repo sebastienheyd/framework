@@ -40,7 +40,7 @@ class f_DataCacheRedisService extends f_DataCacheService
 		if ($this->redis === null)
 		{
 			$conf = Framework::getConfigurationValue("datacache-redis/server");
-			$redis = (defined("WF_USE_PREDIS") || WF_USE_PREDIS) ? new wf_PredisAdapter() : new Redis();
+			$redis = (defined("WF_USE_PREDIS") && WF_USE_PREDIS) ? new wf_PredisAdapter() : new Redis();
 			try
 			{
 				if (!isset($conf["host"]))
