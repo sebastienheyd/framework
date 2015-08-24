@@ -1,7 +1,7 @@
 <?php
 $wfRedisExists = class_exists("Redis", false);
 
-if (!$wfRedisExists || (defined("WF_USE_PREDIS") || WF_USE_PREDIS))
+if (!$wfRedisExists || (defined("WF_USE_PREDIS") && WF_USE_PREDIS))
 {
 	require_once WEBEDIT_HOME.'/framework/libs/predis/Autoloader.php';
 	Predis\Autoloader::register();
