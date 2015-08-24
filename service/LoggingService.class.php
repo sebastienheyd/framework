@@ -181,12 +181,28 @@ class LoggingService extends BaseService
 			$this->defaultExceptionHandler($e);
 		}
 	}
+
+    protected $isInCli = null;
+
+    /**
+     * @return boolean
+     */
+    protected function isInCli()
+    {
+        if ($this->isInCli === null) {
+            $this->isInCli = strtolower(php_sapi_name()) == "cli";
+        }
+        return $this->isInCli;
+    }
 	
 	/**
 	 * @return string
 	 */
 	public function getAdditionnalInfos()
 	{
+        if ($this->isInCli()) {
+            return "";
+        }
 		$infos = "";
 		$infos .= "referer: " . (isset($_SERVER["HTTP_REFERER"]) ? $_SERVER["HTTP_REFERER"]: "-").", ";
 		$infos .= "clientip: " . (isset($_SERVER["REMOTE_ADDR"]) ? $_SERVER["REMOTE_ADDR"]: "-").", ";
