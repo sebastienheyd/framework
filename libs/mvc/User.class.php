@@ -159,9 +159,13 @@ class User
 
 	public function shutdown ()
 	{
-		$this->getContext()->getStorage()
+		$context = $this->getContext();
+		if ($context) {
+			$context->getStorage()
 			 ->write(self::ATTRIBUTE_NAMESPACE, $this->attributes);
-
+		} else {
+            Framework::error(__METHOD__.": no context available");
+        }
 	}
 }
 
@@ -207,9 +211,14 @@ class FrameworkSecurityUser extends SecurityUser
 	}
 	
 	public function shutdown()
-	{		
-		$storage = $this->getContext()->getStorage();
-		$storage->write(self::AUTH_NAMESPACE, $this->authenticated);
+	{	
+		$context = $this->getContext();
+		if ($context) {
+    		$storage = $context->getStorage();
+    		$storage->write(self::AUTH_NAMESPACE, $this->authenticated);
+		} else {
+            Framework::error(__METHOD__.": no context available");
+        }
 		parent::shutdown();
 	}
 	
