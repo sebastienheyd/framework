@@ -152,7 +152,7 @@ class LoggingService extends BaseService
 	 */
 	public function log($stringLine, $loggerGroup)
 	{
-		error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . PHP_EOL . $this->getAdditionnalInfos(). PHP_EOL, 3, $this->stdLogFilePath);
+		error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . PHP_EOL . $this->getAdditionnalInfos(), 3, $this->stdLogFilePath);
 	}
 	
 	/**
@@ -161,7 +161,7 @@ class LoggingService extends BaseService
 	 */
 	public function errorLog($stringLine, $loggerGroup)
 	{
-		error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . PHP_EOL. $this->getAdditionnalInfos(). PHP_EOL, 3, $this->errLogFilePath);
+		error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . PHP_EOL. $this->getAdditionnalInfos(), 3, $this->errLogFilePath);
 	}
 	
 	/**
@@ -174,7 +174,7 @@ class LoggingService extends BaseService
 		try
 		{
 			f_util_FileUtils::mkdir(dirname($logFilePath));
-			error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine .PHP_EOL. $this->getAdditionnalInfos(). PHP_EOL, 3, $logFilePath);
+			error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine .PHP_EOL. $this->getAdditionnalInfos(), 3, $logFilePath);
 		} 
 		catch (Exception $e) 
 		{
@@ -222,6 +222,6 @@ class LoggingService extends BaseService
 		$infos .= "request: " . $request . ", ";
 		$infos .= "userid: " . (isset($_SESSION["User/attributes"]["frontend"]["userid"]) ? $_SESSION["User/attributes"]["frontend"]["userid"] : "-");
 		
-		return $infos;
+		return $infos. PHP_EOL;
 	}
 }
