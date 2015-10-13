@@ -216,7 +216,7 @@ class f_persistentdocument_DocumentService extends BaseService
 			}
 			else
 			{
-				$document->setAuthor($user->getLogin());
+				$document->setAuthor(f_util_StringUtils::shortenString($user->getLogin(),50,''));
 				$document->setAuthorid($user->getId());
 			}
 		}
