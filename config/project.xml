@@ -273,5 +273,24 @@
 				</browser>
 			</backoffice>
 		</browsers>
+
+        <!-- session -->
+        <session>
+            <opening-manager>wf_DefaultSessionOpeningStrategy</opening-manager>
+            <!-- To enable the following url-patterns, uncomment :
+            <opening-manager>wf_URIPatternSessionOpeningStrategy</opening-manager>
+            -->
+            <url-patterns>
+                <!-- media -->
+                <entry name="/media/.*\.html">NONE</entry>
+                <entry name="/index\.php\?module=media&amp;action=GenerateFormated.*">RO</entry>
+                <entry name="/publicmedia/formatted/.*">NONE</entry>
+                <!-- ads -->
+                <entry name="/action/ads/(Click|DisplayBannerImage).*">NONE</entry>
+                <!-- BO -->
+                <entry name="/xul_controller\.php\?module=[^&amp;]*&amp;action=(GetTreeChildrenJSON|GetDocumentHistory|GetDocumentResume|GetListItems|SearchBackofficeJSON|LoadAreasPanel|LoadCommentsForDocument|LoadCustomerCarts|LoadCustomerOrders|LoadForTranslationJSON|LoadInfosForCustomer|LoadJSON|LoadOrderFinancial|LoadOrderMessages|LoadOrderProductReturn|LoadOrderShipping|LoadPermissionsJSON|LoadRedirectInfo|LoadReturnValidationData|LoadShelfFacets|LoadStock|LoadTweetsByTarget|PreviewImage|BoDisplay).*">RO</entry>
+                <entry name="/xchrome_controller\.php\?action=(GetAdminStylesheets|GetAdminJavascripts|GetBinding|GetUICSS).*">RO</entry>
+            </url-patterns>
+        </session>
 	</config>
 </project>

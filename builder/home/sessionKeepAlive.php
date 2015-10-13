@@ -21,7 +21,7 @@ users_UserService::getInstance()->pingBackEndUser();
 
 echo session_id() . ' - ' . $_SESSION['sessionKeepAlive'];
 
-if (($_SESSION['sessionKeepAlive'] % 10) == 0)
+if (($_SESSION['sessionKeepAlive'] % 10) == 0 && (!defined("CHANGECRON_EXECUTION") || CHANGECRON_EXECUTION == "http"))
 {
 	if (defined('NODE_NAME') && ModuleService::getInstance()->moduleExists('clustersafe'))
 	{

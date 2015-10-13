@@ -173,7 +173,7 @@ class ClassResolver implements ResourceResolver
 	
 	protected function validateClassName($className)
 	{
-		if (! preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $className))
+		if (! preg_match('/^[a-zA-Z_\x7f-\xff][\\a-zA-Z0-9_\x7f-\xff]*$/', $className))
 		{
 			if (Framework::inDevelopmentMode())
 			{
@@ -467,11 +467,20 @@ class ClassResolver implements ResourceResolver
 			$tokenArray = token_get_all(file_get_contents($file));
 			$definedClasses = array();
 			$cachePaths = array();
+			$namespace = null;
 			foreach ($tokenArray as $index => $token)
 			{
-				if ($token[0] == T_CLASS || $token[0] == T_INTERFACE)
+				if ($token[0] == T_NAMESPACE)
+				{
+					$namespace = $tokenArray[$index + 2][1];
+				}
+				else if ($token[0] == T_CLASS || $token[0] == T_INTERFACE)
 				{
 					$className = $tokenArray[$index + 2][1];
+					if ($namespace !== null)
+					{
+						$className = $namespace.'\\'.$className;
+					}
 					$definedClasses[] = $className;
 					$cachePaths[$className] = $this->appendToAutoloadFile($className, $file, 
 							$override);

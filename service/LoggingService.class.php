@@ -152,7 +152,7 @@ class LoggingService extends BaseService
 	 */
 	public function log($stringLine, $loggerGroup)
 	{
-		error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . PHP_EOL, 3, $this->stdLogFilePath);
+		error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . $this->getAdditionnalInfos(), 3, $this->stdLogFilePath);
 	}
 	
 	/**
@@ -161,7 +161,7 @@ class LoggingService extends BaseService
 	 */
 	public function errorLog($stringLine, $loggerGroup)
 	{
-		error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . PHP_EOL, 3, $this->errLogFilePath);
+		error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . $this->getAdditionnalInfos(), 3, $this->errLogFilePath);
 	}
 	
 	/**
@@ -174,11 +174,60 @@ class LoggingService extends BaseService
 		try
 		{
 			f_util_FileUtils::mkdir(dirname($logFilePath));
-			error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . PHP_EOL, 3, $logFilePath);
+			error_log(gmdate('Y-m-d H:i:s')."\t".$stringLine . $this->getAdditionnalInfos(), 3, $logFilePath);
 		} 
 		catch (Exception $e) 
 		{
 			$this->defaultExceptionHandler($e);
 		}
+	}
+
+    protected $isInCli = null;
+
+    /**
+     * @return boolean
+     */
+    protected function isInCli()
+    {
+        if ($this->isInCli === null) {
+            $this->isInCli = strtolower(php_sapi_name()) == "cli";
+        }
+        return $this->isInCli;
+    }
+	
+	/**
+	 * @return string
+	 */
+	public function getAdditionnalInfos()
+	{
+        if ($this->isInCli()) {
+        	$request = $_SERVER["SCRIPT_FILENAME"];
+        	if (isset($_SERVER["argv"]) && count($_SERVER["argv"]) > 1) {
+        		$argv = $_SERVER["argv"];
+        		array_shift($argv);
+        		$request .= " ".implode(" ", $argv);
+        	}
+            return " request: ".rawurlencode($request). PHP_EOL;
+        }
+		$infos = PHP_EOL;
+		$infos .= "referer: " . (isset($_SERVER["HTTP_REFERER"]) ? $_SERVER["HTTP_REFERER"]: "-").", ";
+		$infos .= "clientip: " . (isset($_SERVER["REMOTE_ADDR"]) ? $_SERVER["REMOTE_ADDR"]: "-").", ";
+		$sessionId = session_id();
+		$infos .= "sessionid: " . ($sessionId ? $sessionId : "-") .", ";
+        $request = "http";
+        $request .= (isset($_SERVER["HTTPS"]) ? "s" : "") ."://";
+        if (isset($_SERVER["HTTP_HOST"])) {
+            $request .= $_SERVER["HTTP_HOST"];
+        }
+        if (isset($_SERVER["REQUEST_URI"])) {
+            $request .= $_SERVER["REQUEST_URI"];
+        }
+        if ($request == "http://") {
+            $request = "-";
+        }
+		$infos .= "request: " . $request . ", ";
+		$infos .= "userid: " . (isset($_SESSION["User/attributes"]["frontend"]["userid"]) ? $_SESSION["User/attributes"]["frontend"]["userid"] : "-");
+		
+		return $infos. PHP_EOL;
 	}
 }
