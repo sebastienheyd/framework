@@ -863,7 +863,7 @@ class indexer_IndexService extends BaseService
 			{
 				foreach ($projectLangs as $lang)
 				{
-					$rc->setLang($lang);
+					$rc->beginI18nWork($lang);
 					if ($document->isContextLangAvailable())
 					{
 						$res = $this->updateRealDocument($document);
@@ -878,12 +878,14 @@ class indexer_IndexService extends BaseService
 					{
 						$result = $res;
 					}
+					$rc->endI18nWork();
 				}
 			}
 			else
 			{
-				$rc->setLang($document->getLang());
+				$rc->beginI18nWork($document->getLang());
 				$result = $this->updateRealDocument($document);
+				$rc->endI18nWork();
 			}
 		} 
 		catch (Exception $e)
