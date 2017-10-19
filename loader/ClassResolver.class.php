@@ -549,14 +549,11 @@ class ClassResolverDevMode extends ClassResolver
 		{
 			return;
 		}
-		
+
+        $classes = array($className);
 		if (file_exists($path . ".classes"))
 		{
 			$classes = unserialize(f_util_FileUtils::read($path . ".classes"));
-		}
-		else
-		{
-			$classes = array($className);
 		}
 		
 		$alterations = array();
@@ -569,21 +566,23 @@ class ClassResolverDevMode extends ClassResolver
 			}
 		}
 		
-		if (count($alterations) == 0)
+		if (empty($alterations))
 		{
 			return;
 		}
-		
+
 		if ($this->getMaxModifiedTime($aop, $alterations) > filemtime($path))
 		{
-			while (ob_get_level() > 0)
-			{
-				echo ob_get_clean();
-			}
-			$msg = "ERROR: you should compile-aop";
-			Framework::error($msg);
-			die($msg);
-		}
+            if (!defined('AG_DEVELOPMENT_MODE') || AG_DEVELOPMENT_MODE === false)
+            {
+                while (ob_get_level()) ob_end_clean();
+                $msg = "ERROR: you should compile-aop";
+                Framework::error($msg);
+                die($msg);
+            }
+
+            $this->compileAOP();
+        }
 	}
 	
 	/**
